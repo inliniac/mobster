@@ -1,4 +1,16 @@
-# mobster
-EVE(NT) Stream Processing
+![Mobster](http://packetchaser.org/images/MOBSTER2.png)
 
-![alt text](http://packetchaser.org/images/MOBSTER2.png)
+Coming soon (by mid-November 2015)
+
+This is an experimental project that was demonstrated at the 2015 Suricata User Conference.
+It is an event stream processing engine designed to analyze Suricata EVE records like dns,
+http, tls, flow, fileinfo, etc, in real-time.  The project was motivated by a need to correlate
+and detect chain-of-events as meaningful patterns for behavior; otherwise known as behavioral
+indicators.  It is designed to be simple requiring minimal resources. More specifically,
+the primary target hardware platform for the engine is the Raspberry Pi 2 Model B.
+
+To demonstrate the capabilities of the processing engine, the example scripts are 
+implemented and patterned after the various [Bro analysis frameworks](https://www.bro.org/sphinx/frameworks/).
+Please note that the example event handling scripts should not be construed to be equivalent
+to the corresponding Bro scripts by any means.  The intent is to demonstrate the utility
+of the event stream processing engine.
