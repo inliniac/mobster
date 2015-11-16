@@ -1,3 +1,8 @@
+-- October 29, 2015
+-- See https://github.com/nrk/redis-lua/blob/version-2.0/LICENSE
+-- This file was modified to support the new redis hyperloglog
+-- functions: pfadd, pfcount, and pfmerge.
+
 local redis = {
     _VERSION     = 'redis-lua 2.0.5-dev',
     _DESCRIPTION = 'A Lua client library for the redis key value storage system.',

@@ -192,7 +192,7 @@ void mobster_start(const char* config_path)
 int main(void)
 {
     openlog ("mobster", LOG_PERROR, LOG_USER);
-    mobster_start("mobster.json");
+    mobster_start("mobster-config.lua");
     closelog();
 }
 #endif

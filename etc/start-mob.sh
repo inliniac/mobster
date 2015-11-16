@@ -1,16 +1,15 @@
 #!/bin/bash
-
-MOBSTER_ROOT=/home/mobster; export MOBSTER_ROOT
+MOBSTER_ROOT=/home/github/mobster; export MOBSTER_ROOT
 if [ ! -d /var/run/suricata ]; then
    mkdir /var/run/suricata
 fi
 #
-# apt-get install daemon
+# requires daemon; apt-get install daemon
 #
-daemon --env="MOBSTER_ROOT=${MOBSTER_ROOT}" --respawn --output=/var/log/mobster.log --name=mobster /home/randy/mobster/src/mobster
+daemon --env="MOBSTER_ROOT=${MOBSTER_ROOT}" --respawn --output=/var/log/mobster.log --name=mobster ${MOBSTER_ROOT}/src/mobster
 sleep 1
 #
-# To build suricata see the following:
+# To build suricata on rasberry pi see the following:
 #
 # https://redmine.openinfosecfoundation.org/projects/suricata/wiki/Debian_Installation
 #

@@ -45,7 +45,7 @@ uint64_t g_msgReceived = 0;
 #define REDIS_HOSTNAME	"127.0.0.1"
 #define REDIS_PORT       6379
 #define EVE_SOCKET_PATH "/var/run/suricata/eve.socket"
-#define CONFIG_FILE_NAME "mobster.conf"
+#define CONFIG_FILE_NAME "mobster-config.lua"
 
 /*
  * ---------------------------------------------------------------------------------------
