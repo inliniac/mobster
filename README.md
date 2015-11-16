@@ -13,7 +13,7 @@ Please note that the example event handling scripts should not be construed to b
 to the corresponding Bro scripts by any means.  The intent is to demonstrate the utility
 of the event stream processing engine.
 
-Please refer to the [Mobster Project Page](https://packetchaser.org/mobster) for additonal documentation.
+Please refer to the [Mobster Project Page](http://packetchaser.org/mobster) for additonal documentation.
 
 ---
 
