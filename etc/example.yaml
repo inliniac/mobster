@@ -1,0 +1,107 @@
+# Example EVE outputs section of the Suricata YAML file
+outputs:
+  # Extensible Event Format (nicknamed EVE) event log in JSON format
+  - eve-log:
+     enabled: yes
+     filetype: redis
+     redis:
+      server: 127.0.0.1
+      port: 6379
+      mode: channel
+      key: 'EVE:alert'
+     types:
+      - alert:
+            xff:
+              enabled: yes
+              # Two operation modes are available, "extra-data" and "overwrite".
+              mode: extra-data
+              # Two proxy deployments are supported, "reverse" and "forward". In
+              # a "reverse" deployment the IP address used is the last one, in a
+              # "forward" deployment the first IP address is used.
+              deployment: reverse
+              # Header name where the actual IP address will be reported, if more
+              # than one IP address is present, the last IP address will be the
+              # one taken into consideration.
+              header: X-Forwarded-For
+  - eve-log:
+     enabled: yes
+     filetype: redis
+     redis:
+      server: 127.0.0.1
+      port: 6379
+      mode: channel
+      key: 'EVE:smtp'
+     types:
+      - smtp
+
+  - eve-log:
+     enabled: yes
+     filetype: redis
+     redis:
+      server: 127.0.0.1
+      port: 6379
+      mode: channel
+      key: 'EVE:http'
+     types:
+      - http:
+         extended: yes
+         custom: [X-Forwarded-For]
+
+  - eve-log:
+     enabled: yes
+     filetype: redis
+     redis:
+      server: 127.0.0.1
+      port: 6379
+      mode: channel
+      key: 'EVE:dns'
+     types:
+      - dns
+
+  - eve-log:
+     enabled: yes
+     filetype: redis
+     redis:
+      server: 127.0.0.1
+      port: 6379
+      mode: channel
+      key: 'EVE:tls'
+     types:
+      - tls:
+         extended: yes
+
+  - eve-log:
+     enabled: yes
+     filetype: redis
+     redis:
+      server: 127.0.0.1
+      port: 6379
+      mode: channel
+      key: 'EVE:files'
+     types:
+      - files:
+         force-magic: yes   # force logging magic on all logged files
+         force-md5: yes     # force logging of md5 checksums
+
+  - eve-log:
+     enabled: yes
+     filetype: redis
+     redis:
+      server: 127.0.0.1
+      port: 6379
+      mode: channel
+      key: 'EVE:ssh'
+     types:
+      - ssh
+
+  - eve-log:
+     enabled: yes
+     filetype: redis
+     redis:
+      server: 127.0.0.1
+      port: 6379
+      mode: channel
+      key: 'EVE:flow'
+     types:
+      - flow
+
