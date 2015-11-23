@@ -3,7 +3,7 @@
 AUTOMAKE_OPTIONS = foreign 1.4
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = LICENSE README.md
-SUBDIRS = src lua etc
+SUBDIRS = src 
 
 CLEANFILES = stamp-h[0-9]*
 

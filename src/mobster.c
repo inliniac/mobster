@@ -33,19 +33,15 @@
 #include <syslog.h>
 #include <pthread.h>
 #include <errno.h>
+#include <sys/stat.h>
 #include <linux/limits.h>
 
-#include "event_publisher.h"
 #include "event_handlers.h"
 
-uint64_t g_msgPublished = 0;
 uint64_t g_msgSubscribed = 0;
 uint64_t g_msgReceived = 0;
 
-#define REDIS_HOSTNAME	"127.0.0.1"
-#define REDIS_PORT       6379
-#define EVE_SOCKET_PATH "/var/run/suricata/eve.socket"
-#define CONFIG_FILE_NAME "mobster-config.lua"
+#define MOBSTER_ROOT    "MOBSTER_ROOT"
 
 /*
  * ---------------------------------------------------------------------------------------
@@ -55,32 +51,34 @@ uint64_t g_msgReceived = 0;
  
 int main(int argc, char **argv)
 {
-	char config_path [PATH_MAX];
-	const char* mobster_root=getenv("MOBSTER_ROOT");
+	int running=1;
+	struct stat sb;
+	const char* mobster_root=getenv(MOBSTER_ROOT);
+
+	if (!mobster_root)
+	{
+	   fprintf (stderr,"Must define environment variable MOBSTER_ROOT\n");
+	   exit (EXIT_FAILURE);
+	}
+ 	if ((lstat (mobster_root,&sb)<0) || !S_ISDIR(sb.st_mode))
+	{
+	   fprintf (stderr,"MOBSTER_ROOT %s does not exist\n", mobster_root);
+	   exit (EXIT_FAILURE);
+	}
 
 	signal(SIGPIPE, SIG_IGN);
 	openlog ("mobster", LOG_PERROR, LOG_USER);
 
-	if (!mobster_root)
-	{
-		fprintf(stderr,"Environment variable MOBSTER_ROOT is required\n");
-		exit(1);
-	}
-	snprintf (config_path, PATH_MAX,"%s/etc/%s", mobster_root, CONFIG_FILE_NAME);
-
-	
         pthread_setname_np(pthread_self(), "mobster");
 
-	if (mobster_start (config_path) < 0)
+	if (mobster_start (mobster_root) < 0)
 	{
-		syslog (LOG_ERR,"foragers_start() failed");
+		syslog (LOG_ERR,"mobster_start() failed");
 		return (EXIT_FAILURE);
 	}
-
-	if (eve_processor_start (EVE_SOCKET_PATH, REDIS_HOSTNAME, REDIS_PORT) < 0)
+	while (running)
 	{
-		syslog (LOG_ERR,"eve_processor_start() failed");
-		return (EXIT_FAILURE);
+		sleep(1);
 	}
 	closelog ();
 	

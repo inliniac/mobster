@@ -1,15 +1,12 @@
-#!/usr/local/bin/luajit
 -- ----------------------------------------------
 --
 -- ----------------------------------------------
 
 local mobster_root = os.getenv("MOBSTER_ROOT")
---print ("MOBSTER_ROOT :"..mobster_root)
-local script_root = mobster_root.."/lua"
-package.path = script_root.."/?.lua;" .. package.path
-package.cpath = mobster_root.."/lib/?.so;" .. package.path
+package.path = mobster_root.."/scripts/?.lua;" .. package.path
+package.cpath = mobster_root.."/lib/?.so;" .. package.cpath
 
-pcall(require, "luarocks.require")
+--pcall(require, "luarocks.require")
 
 local redis = require('redis')
 local json = require('cjson')

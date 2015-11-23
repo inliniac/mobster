@@ -1,14 +1,17 @@
-#!/usr/local/bin/luajit
 -- ----------------------------------------------
 --
 -- ----------------------------------------------
 
 local mobster_root = os.getenv("MOBSTER_ROOT")
-local script_root = mobster_root.."/lua"
-package.path = script_root.."/?.lua;" .. package.path
-package.cpath = mobster_root.."/lib/?.so;" .. package.path
+--print ("MOBSTER_ROOT :"..mobster_root)
+package.path = mobster_root.."/scripts/?.lua;" .. package.path
+package.cpath = mobster_root.."/lib/?.so;" .. package.cpath
 
-pcall(require, "luarocks.require")
+-- print ("package.path :"..package.path)
+-- print ("package.cpath :"..package.cpath)
+
+-- pcall(require, "luarocks.require")
+
 local redis = require('redis')
 local json = require('cjson')
 
@@ -24,7 +27,7 @@ function process()
 	for msg, abort in listener:pubsub({ subscribe = channel }) do
 	    if msg.kind == 'subscribe' then
         	print('subscribed to channel '..msg.channel)
-	    elseif msg.kind == 'message' and msg.channel == 'EVE:dns' then
+	    elseif msg.kind == 'message' then
 			local eve = json.decode(msg.payload)
 			if eve.dns.type == 'answer' and eve.dns.rdata then
 				local value = nil

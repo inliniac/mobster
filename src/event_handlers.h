@@ -24,7 +24,7 @@
 #ifndef _MOBSTER_THREAD_
 #define _MOBSTER_THREAD_
 
-int mobster_start(const char *config_path);
+int mobster_start(const char *mobster_root);
 
 #endif
 

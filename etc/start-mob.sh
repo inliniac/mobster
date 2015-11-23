@@ -13,5 +13,5 @@ sleep 1
 #
 # https://redmine.openinfosecfoundation.org/projects/suricata/wiki/Debian_Installation
 #
-/usr/bin/suricata -c /etc/suricata/suricata.yaml --disable-detection -i eth0 -D
+/usr/local/bin/suricata -c /etc/suricata/suricata.yaml --disable-detection -i eth0 -D
 
