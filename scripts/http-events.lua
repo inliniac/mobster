@@ -6,8 +6,6 @@ local mobster_root = os.getenv("MOBSTER_ROOT")
 package.path = mobster_root.."/scripts/?.lua;" .. package.path
 package.cpath = mobster_root.."/lib/?.so;" .. package.cpath
 
---pcall(require, "luarocks.require")
-
 local redis = require('redis')
 local json = require('cjson')
 

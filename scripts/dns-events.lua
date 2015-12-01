@@ -3,14 +3,8 @@
 -- ----------------------------------------------
 
 local mobster_root = os.getenv("MOBSTER_ROOT")
---print ("MOBSTER_ROOT :"..mobster_root)
 package.path = mobster_root.."/scripts/?.lua;" .. package.path
 package.cpath = mobster_root.."/lib/?.so;" .. package.cpath
-
--- print ("package.path :"..package.path)
--- print ("package.cpath :"..package.cpath)
-
--- pcall(require, "luarocks.require")
 
 local redis = require('redis')
 local json = require('cjson')
@@ -50,7 +44,7 @@ function process()
 				client:expire(key,"60")
 				-- DNS repuation lookup
 				if client:sismember("black_list:dns",eve.dns.rrname) then
-					client:publish("notice","matched bad dns: "..eve.dns.rrname)	
+					client:publish("EVE:notice","matched bad dns: "..eve.dns.rrname)	
 				end
 			end
 	    end

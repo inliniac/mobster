@@ -6,8 +6,6 @@ local mobster_root = os.getenv("MOBSTER_ROOT")
 package.path = mobster_root.."/scripts/?.lua;" .. package.path
 package.cpath = mobster_root.."/lib/?.so;" .. package.cpath
 
--- pcall(require, "luarocks.require")
-
 local redis = require('redis')
 local json = require('cjson')
 
@@ -21,6 +19,19 @@ function process()
 	local listen = redis.connect(params)
 	local client = redis.connect(params)
 
+	-- ----------------------------------------------
+	-- load the reputation ip addresses
+	-- ----------------------------------------------
+	local ip_negative_list = mobster_root.."/etc/ip-negative.lst"
+	for line in io.lines(ip_negative_list) do
+		ip_address=line:match("^%s*(.-)%s*$") 
+		client:sadd("ip:negative", ip_address)
+		print ("added "..ip_address.." to negative ip list")
+	end
+
+	-- ----------------------------------------------
+	--
+	-- ----------------------------------------------
 	for msg, abort in listen:pubsub({ subscribe = channel }) do
             if msg.kind == 'subscribe' then
                 print('subscribed to channel '..msg.channel)
@@ -40,16 +51,20 @@ function process()
 
 		-- bytes out > bytes in ?
 		if  tonumber(eve.flow.bytes_toserver) > tonumber (eve.flow.bytes_toclient) then
-			client:publish("notice"," out:"..eve.dest_ip.."("..eve.flow.bytes_toserver..") > in:"..eve.src_ip.."("..eve.flow.bytes_toclient..")")
+			client:publish("EVE:notice"," out:"..eve.dest_ip.."("..eve.flow.bytes_toserver..") > in:"..eve.src_ip.."("..eve.flow.bytes_toclient..")")
 		end
 
-		-- IP repuation lookup
-		if client:sismember("black_list:ip",eve.src_ip) then
-			client:publish("notice","matched bad ip address: "..eve.src_ip)	
+		-- ----------------------------------------------
+		-- IP reputation lookup
+		-- ----------------------------------------------
+		if client:sismember("ip:negative",eve.src_ip) then
+			client:publish("EVE:notice","matched negative ip address: "..eve.src_ip)	
+			print ("matched negative ip address: "..eve.src_ip)	
 		end
 
-		if client:sismember("black_list:ip",eve.dest_ip) then
-			client:publish("notice","matched bad ip address: "..eve.dest_ip)	
+		if client:sismember("ip:negative",eve.dest_ip) then
+			client:publish("EVE:notice","matched negative ip address: "..eve.dest_ip)	
+			print ("matched negative ip address: "..eve.dest_ip)	
 		end	
 	    end
 	end

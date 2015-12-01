@@ -6,8 +6,6 @@ local mobster_root = os.getenv("MOBSTER_ROOT")
 package.path = mobster_root.."/scripts/?.lua;" .. package.path
 package.cpath = mobster_root.."/lib/?.so;" .. package.cpath
 
---pcall(require, "luarocks.require")
-
 local redis = require('redis')
 local json = require('cjson')
 local mm = require 'maxminddb'
@@ -39,7 +37,7 @@ function process()
 				if res then
 					dst_country = res:get("country", "names", "en")
 				end
-				client.publish("notice","SSH "..eve.src_ip.."("..src_country..") => "..eve.dest_ip.."("..dst_country..")")
+				client.publish("EVE:notice","SSH "..eve.src_ip.."("..src_country..") => "..eve.dest_ip.."("..dst_country..")")
 			end
 	    end	
     	end

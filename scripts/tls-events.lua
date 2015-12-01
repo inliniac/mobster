@@ -6,8 +6,6 @@ local mobster_root = os.getenv("MOBSTER_ROOT")
 package.path = mobster_root.."/scripts/?.lua;" .. package.path
 package.cpath = mobster_root.."/lib/?.so;" .. package.cpath
 
-pcall(require, "luarocks.require")
-
 local redis = require('redis')
 local json = require('cjson')
 
@@ -36,7 +34,7 @@ function process()
 				local a_record = sha1..".notary.icsi.berkeley.edu"
 				local ip = socket.dns.toip(a_record) 
 				if ip == nil then
-					client.publish("notice", "QUESTIONABLE cert: "..sha1.."\n\tissuer: "..eve.tls.issuerdn.."\n\tsubject: "..eve.tls.subject)
+					client.publish("EVE:notice", "QUESTIONABLE cert: "..sha1.."\n\tissuer: "..eve.tls.issuerdn.."\n\tsubject: "..eve.tls.subject)
 				else
 					--print(">> TLS notary resp: "..ip)
 					if ip == "127.0.0.2" or ip == "127.0.0.1" then
@@ -44,7 +42,7 @@ function process()
 						client:sadd("tls:valid",sha1) 
 						client:expire(key,'300')
 					else
-						client.publish("notice","INVALID cert: "..sha1.."\n\tissuer: "..eve.tls.issuerdn.."\n\tsubject: "..eve.tls.subject)
+						client.publish("EVE:notice","INVALID cert: "..sha1.."\n\tissuer: "..eve.tls.issuerdn.."\n\tsubject: "..eve.tls.subject)
 					end
 				end
 			end

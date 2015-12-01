@@ -6,8 +6,6 @@ local mobster_root = os.getenv("MOBSTER_ROOT")
 package.path = mobster_root.."/scripts/?.lua;" .. package.path
 package.cpath = mobster_root.."/lib/?.so;" .. package.cpath
 
---pcall(require, "luarocks.require")
-
 local redis = require('redis')
 local json = require('cjson')
 
@@ -34,7 +32,7 @@ function process()
 			client:hmset(key, "filename",filename,"magic",eve.fileinfo.magic)
 			client:expire(key,'300')
 			--client:zincrby("fileinfo",1,eve.fileinfo.md5)
-			--print (key.." : " .. filename)
+			print (key.." : " .. filename)
 	    end
 	end
 end
