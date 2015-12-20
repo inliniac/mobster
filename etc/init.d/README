@@ -1,1 +1,1 @@
-copy the mobster file in this directory to /etd/init.d/
+If you're running Raspbian (or Debian), copy the mobster file in this directory to /etd/init.d/.

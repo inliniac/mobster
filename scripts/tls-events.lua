@@ -48,7 +48,7 @@ function process()
 						client:sadd("tls:valid",sha1) 
 						client:expire(key,'300')
 					else
-						message = "tls -- invalid: "..sha1.."\n\tissuer: "..eve.tls.issuerdn.."\n\tsubject: "..eve.tls.subject)
+						message = "tls -- invalid: "..sha1.."\n\tissuer: "..eve.tls.issuerdn.."\n\tsubject: "..eve.tls.subject
 						mobster_notify (eve.timestamp, "tls", "notice", message)
 					end
 				end

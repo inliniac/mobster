@@ -1,2 +1,2 @@
-copy the mobster file in this directory to /etc/default/
+If you're running Raspbian (or Debian), copy the mobster file in this directory to /etc/default/.
 

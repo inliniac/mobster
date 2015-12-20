@@ -24,6 +24,7 @@
 #define _GNU_SOURCE
 
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -54,6 +55,8 @@ static int g_verbose = 0;
 static redisContext *g_redis_ctx = NULL;
 static pthread_mutex_t g_redis_mutex = PTHREAD_MUTEX_INITIALIZER;
 static FILE *g_fp = NULL;
+extern uint64_t g_running;
+
 /*
  * ---------------------------------------------------------------------------------------
  *

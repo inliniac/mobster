@@ -85,7 +85,7 @@ function process()
 		end
 
 		if client:sismember("ip:negative",eve.dest_ip) then
-			local message = "Matched negative dst ip address: "..eve.dest_ip..":"..dest_port.." ("..dst_country..") <- "..src_ip..":"..eve.src_port.." ("..src_country..")
+			local message = "Matched negative dst ip address: "..eve.dest_ip..":"..dest_port.." ("..dst_country..") <- "..src_ip..":"..eve.src_port.." ("..src_country..")"
 	 		mobster_notify (eve.timestamp, "flow", "notice", message)
 		end	
 	    end

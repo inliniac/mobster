@@ -40,6 +40,7 @@
 
 uint64_t g_msgSubscribed = 0;
 uint64_t g_msgReceived = 0;
+uint64_t g_running = 1;
 
 #define MOBSTER_ROOT    "MOBSTER_ROOT"
 
@@ -51,7 +52,6 @@ uint64_t g_msgReceived = 0;
  
 int main(int argc, char **argv)
 {
-	int running=1;
 	struct stat sb;
 	const char* mobster_root=getenv(MOBSTER_ROOT);
 
@@ -76,7 +76,7 @@ int main(int argc, char **argv)
 		syslog (LOG_ERR,"mobster_start() failed");
 		return (EXIT_FAILURE);
 	}
-	while (running)
+	while (g_running)
 	{
 		sleep(1);
 	}
