@@ -34,6 +34,9 @@
 #include <syslog.h>
 #include <pthread.h>
 #include <errno.h>
+#include <signal.h>
+
+#include <hiredis/hiredis.h>
 
 #include <lua5.1/lua.h>                               
 #include <lua5.1/lauxlib.h>                            
@@ -43,9 +46,128 @@
 #include <luajit-2.0/luajit.h>
 #endif
 
+#define LOG_FILE	"/var/log/mobster.log"
 #define CONFIG_FILE_NAME "config.lua"
 static char *g_redis_host = "127.0.0.1";
 static int g_redis_port = 6379;
+static int g_verbose = 0; 
+static redisContext *g_redis_ctx = NULL;
+static pthread_mutex_t g_redis_mutex = PTHREAD_MUTEX_INITIALIZER;
+static FILE *g_fp = NULL;
+/*
+ * ---------------------------------------------------------------------------------------
+ *
+ * ---------------------------------------------------------------------------------------
+ */
+void file_rotate(int signo)
+{
+  	if (signo == SIGUSR1)
+	{
+		char newfile [PATH_MAX];
+
+		pthread_mutex_lock(&g_redis_mutex);
+		fclose (g_fp);
+
+		g_fp = fopen (LOG_FILE, "w+");
+		if (!g_fp)
+		{
+			perror ("fopen");
+			pthread_mutex_unlock(&g_redis_mutex);
+			abort ();
+		}
+		setvbuf(g_fp, NULL, _IOLBF, 0);
+
+		pthread_mutex_unlock(&g_redis_mutex);
+		syslog (LOG_ERR,"%s: received HUP to truncate %s", LOG_FILE);
+	}
+}
+
+/*
+ * ---------------------------------------------------------------------------------------
+ *
+ * ---------------------------------------------------------------------------------------
+ */
+static void *notice_thread (void *v)
+{
+	(void) v;
+
+        if (signal(SIGUSR1, file_rotate) == SIG_ERR)
+	{
+		syslog (LOG_ERR,"signal() failed; %s", strerror (errno));
+		abort ();
+	}
+
+
+	g_fp = fopen (LOG_FILE, "a+");
+	if (!g_fp)
+	{
+		perror ("fopen");
+		abort ();
+	}
+	setvbuf(g_fp, NULL, _IOLBF, 0);
+
+    	redisContext *redis_ctx = redisConnect(g_redis_host, g_redis_port);
+    	if (redis_ctx != NULL && redis_ctx->err)
+    	{
+        	syslog (LOG_ERR,"redisConnect() failed; %s", redis_ctx->errstr);
+        	abort ();
+    	}
+
+	redisReply *reply = redisCommand(redis_ctx,"SUBSCRIBE EVE:notice");
+	if (reply->type==REDIS_REPLY_ERROR)
+        {
+        	syslog (LOG_ERR,"redisCommand() failed; %s", reply->str);
+		abort ();
+        }
+	if (reply) freeReplyObject(reply);
+	
+       	syslog (LOG_INFO,"Notice thread running");
+	while(redisGetReply(redis_ctx,(void **) &reply) == REDIS_OK)
+	{
+		if (reply->type==REDIS_REPLY_ARRAY && reply->elements>2)
+		{
+			pthread_mutex_lock(&g_redis_mutex);
+			fputs (reply->element[2]->str, g_fp);
+			fputs ("\n", g_fp);
+			pthread_mutex_unlock(&g_redis_mutex);
+			if (g_verbose) puts (reply->element[2]->str);
+		}
+    		if (reply) freeReplyObject(reply);
+	}
+	fclose (g_fp);
+	redisFree (redis_ctx);
+}
+
+/*
+ * ---------------------------------------------------------------------------------------
+ *
+ * ---------------------------------------------------------------------------------------
+ */
+static int mobster_notify(lua_State *L) 
+{
+	const char *timestamp = luaL_checkstring(L, 1);
+        const char *category = luaL_checkstring(L, 2);
+        const char *action = luaL_checkstring(L, 3);
+        const char *message = luaL_checkstring(L, 4);
+
+	 char json [1024];
+	 memset (json, 0, sizeof(json));
+	 snprintf (json, 
+	    	sizeof(json)-1, 
+		"{\"timestamp\":\"%s\",\"event_type\":\"notice\",\"notice\":{\"category\":\"%s\",\"action\":\"%s\",\"message\":\"%s\"}}",
+	  	timestamp, category, action, message);
+	 if (g_verbose) fprintf (stderr,"%s: %s\n", __FUNCTION__, json);
+	 redisReply *reply = redisCommand(g_redis_ctx,"PUBLISH EVE:notice %s", json);
+	 if (reply)
+	 {
+	 	freeReplyObject(reply);
+	 }
+	 else
+	 {
+       		syslog (LOG_ERR,"PUBLISH - %s", g_redis_ctx->errstr);
+	 }
+	 return 0;
+}
 
 /*
  * ---------------------------------------------------------------------------------------
@@ -74,7 +196,7 @@ static void *lua_thread (void *ptr)
     lua_State *L = luaL_newstate();                       
     luaL_openlibs(L);  
   
-    syslog (LOG_ERR, "Loading %s", lua_script);
+    syslog (LOG_INFO, "Loading %s", lua_script);
     if (luaL_loadfile(L, lua_script)||lua_pcall(L, 0, 0, 0))
     {
         syslog (LOG_ERR, "luaL_loadfile %s failed - %s",lua_script, lua_tostring(L, -1));
@@ -86,6 +208,8 @@ static void *lua_thread (void *ptr)
     lua_setglobal(L, "redis_port");
     lua_pushstring(L, g_redis_host);
     lua_setglobal(L, "redis_host");
+    lua_pushcfunction(L, mobster_notify);
+    lua_setglobal(L, "mobster_notify");
 
     syslog (LOG_NOTICE,"Running %s as %s\n", lua_script, name);
     lua_getglobal(L, "run");             
@@ -116,13 +240,13 @@ static void run_mobster (const char* mobster_root)
     if (luaL_loadfile(L, config_file)) 
     {
         syslog (LOG_ERR,"luaL_loadfile failed; %s",lua_tostring(L, -1));
-    	pthread_exit(NULL);
+	abort ();
     }
 
     if (lua_pcall(L, 0, 0, 0))                  
     {
         syslog (LOG_ERR,"lua_pcall failed; %s",lua_tostring(L, -1));
-    	pthread_exit(NULL);
+	abort ();
     }
 
     lua_getglobal(L, "redis_host");
@@ -147,10 +271,23 @@ static void run_mobster (const char* mobster_root)
     	pthread_exit(NULL);
     }
 
+    g_redis_ctx = redisConnect(g_redis_host, g_redis_port);
+    if (g_redis_ctx != NULL && g_redis_ctx->err)
+    {
+    	syslog (LOG_ERR,"redisConnect() failed; %s", g_redis_ctx->errstr);
+	abort ();
+    }
+
+    pthread_t thread;
+    if(pthread_create(&thread, NULL, notice_thread, (void *) NULL)!=0)
+    {
+	syslog (LOG_ERR,"pthread_create() %s", strerror (errno));
+	pthread_exit(NULL);
+    }
+
     while (lua_next(L, -2)) 
     {                   
 	struct stat sb;
-	pthread_t thread;
         const char *lua_script = lua_tostring(L, -1);                 
 	char tmp [PATH_MAX];
 	snprintf (tmp, PATH_MAX, "%s/scripts/%s", mobster_root, lua_script);
@@ -184,6 +321,7 @@ static void run_mobster (const char* mobster_root)
 
 void mobster_start(const char* mobster_root)
 {
+    g_verbose=isatty(1);
     run_mobster (mobster_root);
 }
 

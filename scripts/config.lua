@@ -14,5 +14,5 @@ mobster_scripts=
 	"http-events.lua",
 	"flow-events.lua",
 	"sumstats-events.lua"
-	"notice-events.lua"
 }
+

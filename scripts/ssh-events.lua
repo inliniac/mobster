@@ -37,7 +37,8 @@ function process()
 				if res then
 					dst_country = res:get("country", "names", "en")
 				end
-				client.publish("EVE:notice","SSH "..eve.src_ip.."("..src_country..") => "..eve.dest_ip.."("..dst_country..")")
+				local message = "SSH "..eve.src_ip.."("..src_country..") => "..eve.dest_ip.."("..dst_country..")"
+				mobster_notify (eve.timestamp, "ssh", "notice", message)
 			end
 	    end	
     	end

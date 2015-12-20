@@ -15,7 +15,7 @@ local json = require('cjson')
 function process()
 	local channels = { 'EVE:tls' }
 	local params = { host = redis_host, port = redis_port }
-
+	local message = ""
 	local listen = redis.connect(params)
 	local client = redis.connect(params)
 
@@ -26,23 +26,30 @@ function process()
 		local eve = json.decode(msg.payload)
 		local sha1 = string.gsub(eve.tls.fingerprint, ":", "")
 		if sha1 then
+		        print ("TLS finger print "..eve.tls.fingerprint)
 			key = "tls:"..sha1
 			client:hmset(key, "issuerdn",eve.tls.issuerdn,"subject",eve.tls.subject,"version", eve.tls.version)
 			client:expire(key,'300')
-			client:zincrby("tls",1,eve.tls.fingerprint)
+			client:zincrby("tls",1,sha1)
 			if not client:sismember("tls:valid",sha1) then
 				local a_record = sha1..".notary.icsi.berkeley.edu"
-				local ip = socket.dns.toip(a_record) 
-				if ip == nil then
-					client.publish("EVE:notice", "QUESTIONABLE cert: "..sha1.."\n\tissuer: "..eve.tls.issuerdn.."\n\tsubject: "..eve.tls.subject)
+				print(">> TLS CHECKING: "..a_record)
+				-- local ip, status = pcall(socket.dns.toip(a_record))
+				local ip, status = socket.dns.toip(a_record) 
+				if not ip then
+					print(">> TLS LOOKUP ERROR: "..status)
+					client = redis.connect(params)
+					message = "QUESTIONABLE cert: "..sha1.."\n\tissuer: "..eve.tls.issuerdn.."\n\tsubject: "..eve.tls.subject
+					mobster_notify (eve.timestamp, "tls", "notice", message)
+					print("EVE:notice", message) 
 				else
-					--print(">> TLS notary resp: "..ip)
+					print(">> TLS RESP: "..ip)
 					if ip == "127.0.0.2" or ip == "127.0.0.1" then
-						--print(">> VALIDATED certificate "..sha1.." subject: "..eve.tls.subject)
 						client:sadd("tls:valid",sha1) 
 						client:expire(key,'300')
 					else
-						client.publish("EVE:notice","INVALID cert: "..sha1.."\n\tissuer: "..eve.tls.issuerdn.."\n\tsubject: "..eve.tls.subject)
+						message = "tls -- invalid: "..sha1.."\n\tissuer: "..eve.tls.issuerdn.."\n\tsubject: "..eve.tls.subject)
+						mobster_notify (eve.timestamp, "tls", "notice", message)
 					end
 				end
 			end

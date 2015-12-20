@@ -27,11 +27,8 @@ function process()
 				local value = nil
 				local rrdata = eve.dns.rdata 
 				local key = "dns:"..eve.flow_id..":"..eve.dns.id
-				if string.find (eve.dns.rrname,"notary.icsi.berkeley.edu") then
-				-- skip notary
-				elseif not client:exists(key) then
+				if not client:exists(key) then
 					client:zincrby("dns",1,eve.dns.rrname)
-					--print(">> "..key .." : " ..eve.dns.rrtype .." : "..eve.dns.rrname)
 				else
 					value = client:hget(key,eve.dns.rrtype)
 					if value then
@@ -39,12 +36,13 @@ function process()
 					end	
 				end
 				if not client:hmset(key, eve.dns.rrtype,rrdata,"ttl",eve.dns.ttl) then
-					print ("hmset ERROR!")
+					print ("EVE:dns - hmset ERROR!")
 				end
 				client:expire(key,"60")
-				-- DNS repuation lookup
-				if client:sismember("black_list:dns",eve.dns.rrname) then
-					client:publish("EVE:notice","matched bad dns: "..eve.dns.rrname)	
+				-- DNS reputation lookup
+				if client:sismember("dns:negative",eve.dns.rrname) then
+					message = "matched negative dns: "..eve.dns.rrname
+					mobster_notify (eve.timestamp, "dns", "notice", message)
 				end
 			end
 	    end

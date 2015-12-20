@@ -25,9 +25,10 @@ function process()
 	    if msg.kind == 'subscribe' then
                 print('subscribed to channel '..msg.channel)
             elseif msg.kind == 'message' then
-		notice_log:write(msg.payload)
+		notice_log:write(msg.payload,"\n")
 	    end
 	end
+
 	notice_log:close()
 end
 
