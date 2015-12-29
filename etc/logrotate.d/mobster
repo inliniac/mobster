@@ -1,0 +1,11 @@
+/var/log/mobster/*.log {
+	daily
+	missingok
+	rotate 7
+	compress
+	delaycompress
+	notifempty
+	postrotate
+		[ ! -f /var/run/mobster/mobster.pid ] || kill -USR1 `cat /var/run/mobster/mobster.pid`
+	endscript
+}

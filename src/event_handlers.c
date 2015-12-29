@@ -47,7 +47,8 @@
 #include <luajit-2.0/luajit.h>
 #endif
 
-#define LOG_FILE	"/var/log/mobster.log"
+#define LOG_DIR		"/var/log/mobster"
+#define LOG_FILE	"/var/log/mobster/mobster.log"
 #define CONFIG_FILE_NAME "config.lua"
 static char *g_redis_host = "127.0.0.1";
 static int g_redis_port = 6379;
@@ -100,6 +101,14 @@ static void *notice_thread (void *v)
 		abort ();
 	}
 
+	if (mkdir(LOG_DIR, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) < 0)
+	{
+		if (errno != EEXIST)
+		{
+			syslog (LOG_ERR,"mkdir %s; %s", LOG_DIR, strerror (errno));
+			abort ();
+		}
+	}
 
 	g_fp = fopen (LOG_FILE, "a+");
 	if (!g_fp)

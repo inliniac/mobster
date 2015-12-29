@@ -43,8 +43,8 @@ function process()
 		client:expire(key,'60')
 
 		-- bytes out > bytes in ?
-		if  tonumber(eve.flow.bytes_toserver) > tonumber (eve.flow.bytes_toclient) and  tonumber(eve.flow.bytes_toserver) > 65536 then
-			local message = "flow - out:"..eve.dest_ip.."("..eve.flow.bytes_toserver..") > in:"..eve.src_ip.."("..eve.flow.bytes_toclient..")"
+		if  tonumber(eve.flow.bytes_toserver) > tonumber (eve.flow.bytes_toclient) and tonumber(eve.flow.bytes_toserver) > 65536 then
+			local message = "flow - dst:"..eve.dest_ip.."("..eve.flow.bytes_toserver..") <- src:"..eve.src_ip.."("..eve.flow.bytes_toclient..")"
 			mobster_notify (eve.timestamp, "flow", "notice", message)
 		end
 
