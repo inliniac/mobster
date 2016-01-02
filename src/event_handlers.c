@@ -307,7 +307,7 @@ static void run_mobster (const char* mobster_config)
 
        snprintf (temp_script_dir, PATH_MAX, "%s/%s", mobster_root, "/scripts");
 
-       if (!temp_script_dir)
+       if (!temp_script_dir || !mobser_root)
        {
           fprintf (stderr,"Script Directory %s does not exist and cannot location under mobster_root\n", script_dir);
           exit (EXIT_FAILURE);
