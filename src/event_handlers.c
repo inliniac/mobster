@@ -222,6 +222,9 @@ static void *lua_thread (void *ptr)
     syslog (LOG_INFO, "Loading %s", lua_script);
     lua_pushstring(L, script_dir);
     lua_setglobal(L, "script_dir");
+    lua_pushstring(L, log_dir);
+    lua_setglobal(L, "log_dir");
+
     if (luaL_loadfile(L, lua_script)||lua_pcall(L, 0, 0, 0))
     {
         syslog (LOG_ERR, "luaL_loadfile %s failed - %s",lua_script, lua_tostring(L, -1));
@@ -235,6 +238,8 @@ static void *lua_thread (void *ptr)
     lua_setglobal(L, "redis_host");
     lua_pushcfunction(L, mobster_notify);
     lua_setglobal(L, "mobster_notify");
+    lua_pushstring(L, notice_key);
+    lua_setglobal(L, "notice_key");
 
 
     syslog (LOG_NOTICE,"Running %s as %s\n", lua_script, name);
@@ -307,7 +312,7 @@ static void run_mobster (const char* mobster_config)
 
        snprintf (temp_script_dir, PATH_MAX, "%s/%s", mobster_root, "/scripts");
 
-       if (!temp_script_dir || !mobser_root)
+       if (!temp_script_dir || !mobster_root)
        {
           fprintf (stderr,"Script Directory %s does not exist and cannot location under mobster_root\n", script_dir);
           exit (EXIT_FAILURE);

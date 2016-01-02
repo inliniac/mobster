@@ -66,15 +66,22 @@ int main(int argc, char **argv)
            if ((lstat (argv[1],&sb)<0) || !S_ISREG(sb.st_mode))
            {
 	      mobster_root=getenv(MOBSTER_ROOT);
+              char config_file [PATH_MAX];
+              snprintf (config_file, PATH_MAX, "%s/%s", mobster_root, "/scripts/config.lua");
+
               if (!mobster_root)
               {
                  fprintf (stderr,"Config file %s and environment variable MOBSTER_ROOT do not exist\n", argv[1]);
                  exit (EXIT_FAILURE);
               }
+              else if ((lstat (config_file,&sb)<0) || !S_ISREG(sb.st_mode))
+              {
+                 fprintf (stderr,"Config file specified does not exist. $MOBSTER_ROOT/scripts/config.lua does not exist\n");
+                 exit (EXIT_FAILURE);
+              }
               else
               {
-                 fprintf (stderr,"Config file specified does not exist.  Using MOBSTER_ROOT\n");
-                 mobster_config=strcpy(mobster_root,"/config.lua");
+                 mobster_config=config_file;
               }
            }
            else
@@ -96,7 +103,14 @@ int main(int argc, char **argv)
 	      fprintf (stderr,"MOBSTER_ROOT %s does not exist\n", mobster_root);
 	      exit (EXIT_FAILURE);
 	   }
-           mobster_config=strcpy(mobster_root,"/config.lua");
+           char config_file [PATH_MAX];
+           snprintf (config_file, PATH_MAX, "%s/%s", mobster_root, "/scripts/config.lua");
+           if ((lstat (config_file,&sb)<0) || !S_ISREG(sb.st_mode))
+           {
+              fprintf (stderr,"$MOBSTER_ROOT/scripts/config.lua does not exist\n.");
+              exit (EXIT_FAILURE);
+           }
+           mobster_config=config_file;
         }
         int path_len = strlen(mobster_config);
         if (path_len > PATH_MAX)
