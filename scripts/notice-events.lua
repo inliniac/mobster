@@ -14,7 +14,6 @@ local notice_log_path = log_dir.."/notice.log"
 --
 -- ----------------------------------------------
 function process()
-        print(notice_log_path)
 	local channels = { notice_key }
 	local params = { host = redis_host, port = redis_port }
 
