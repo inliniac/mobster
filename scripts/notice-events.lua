@@ -3,8 +3,8 @@
 -- ----------------------------------------------
 
 local mobster_root = os.getenv("MOBSTER_ROOT")
-package.path = mobster_root.."/scripts/?.lua;" .. package.path
-package.cpath = mobster_root.."/lib/?.so;" .. package.cpath
+package.path = script_dir.."/?.lua;" .. package.path
+package.cpath = script_dir.."/lib/?.so;" .. package.cpath
 
 local redis = require('redis')
 local json = require('cjson')
