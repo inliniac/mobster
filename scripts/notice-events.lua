@@ -2,7 +2,6 @@
 --
 -- ----------------------------------------------
 
-local mobster_root = os.getenv("MOBSTER_ROOT")
 package.path = script_dir.."/?.lua;" .. package.path
 package.cpath = script_dir.."/lib/?.so;" .. package.cpath
 
