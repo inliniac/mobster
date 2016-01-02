@@ -39,24 +39,28 @@
 
 #include <hiredis/hiredis.h>
 
-#include <lua5.1/lua.h>                               
-#include <lua5.1/lauxlib.h>                            
-#include <lua5.1/lualib.h>                             
+#include <lua.h>                               
+#include <lauxlib.h>                            
+#include <lualib.h>                             
 
 #ifdef ENABLE_JIT
 #include <luajit-2.0/luajit.h>
 #endif
 
-#define LOG_DIR		"/var/log/mobster"
-#define LOG_FILE	"/var/log/mobster/mobster.log"
-#define CONFIG_FILE_NAME "config.lua"
 static char *g_redis_host = "127.0.0.1";
+static char *script_dir = "/opt/mobster/scripts";
+static char *notice_key = "EVE:notice";
+static char *log_dir = "/var/log/mobster";
+static char *log_file = "mobster.log";
 static int g_redis_port = 6379;
+
 static int g_verbose = 0; 
 static redisContext *g_redis_ctx = NULL;
 static pthread_mutex_t g_redis_mutex = PTHREAD_MUTEX_INITIALIZER;
 static FILE *g_fp = NULL;
 extern uint64_t g_running;
+
+#define MOBSTER_ROOT    "MOBSTER_ROOT"
 
 /*
  * ---------------------------------------------------------------------------------------
@@ -72,7 +76,9 @@ void file_rotate(int signo)
 		pthread_mutex_lock(&g_redis_mutex);
 		fclose (g_fp);
 
-		g_fp = fopen (LOG_FILE, "w+");
+                char filename [PATH_MAX];
+                snprintf(filename, PATH_MAX, "%s/%s", log_dir, log_file);
+		g_fp = fopen (filename, "w+");
 		if (!g_fp)
 		{
 			perror ("fopen");
@@ -82,7 +88,7 @@ void file_rotate(int signo)
 		setvbuf(g_fp, NULL, _IOLBF, 0);
 
 		pthread_mutex_unlock(&g_redis_mutex);
-		syslog (LOG_ERR,"%s: received HUP to truncate %s", LOG_FILE);
+		syslog (LOG_ERR,"%s: received HUP to truncate %s/%s", log_dir, log_file);
 	}
 }
 
@@ -101,16 +107,18 @@ static void *notice_thread (void *v)
 		abort ();
 	}
 
-	if (mkdir(LOG_DIR, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) < 0)
+	if (mkdir(log_dir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) < 0)
 	{
 		if (errno != EEXIST)
 		{
-			syslog (LOG_ERR,"mkdir %s; %s", LOG_DIR, strerror (errno));
+			syslog (LOG_ERR,"mkdir %s; %s", log_dir, strerror (errno));
 			abort ();
 		}
 	}
 
-	g_fp = fopen (LOG_FILE, "a+");
+        char filename [PATH_MAX];
+        snprintf(filename, PATH_MAX, "%s/%s", log_dir, log_file);
+	g_fp = fopen (filename, "a+");
 	if (!g_fp)
 	{
 		perror ("fopen");
@@ -125,7 +133,8 @@ static void *notice_thread (void *v)
         	abort ();
     	}
 
-	redisReply *reply = redisCommand(redis_ctx,"SUBSCRIBE EVE:notice");
+	redisReply *reply = redisCommand(redis_ctx,"SUBSCRIBE %s", notice_key);
+
 	if (reply->type==REDIS_REPLY_ERROR)
         {
         	syslog (LOG_ERR,"redisCommand() failed; %s", reply->str);
@@ -169,7 +178,9 @@ static int mobster_notify(lua_State *L)
 		"{\"timestamp\":\"%s\",\"event_type\":\"notice\",\"notice\":{\"category\":\"%s\",\"action\":\"%s\",\"message\":\"%s\"}}",
 	  	timestamp, category, action, message);
 	 if (g_verbose) fprintf (stderr,"%s: %s\n", __FUNCTION__, json);
-	 redisReply *reply = redisCommand(g_redis_ctx,"PUBLISH EVE:notice %s", json);
+         
+	 redisReply *reply = redisCommand(g_redis_ctx,"PUBLISH %s %s", notice_key, json);
+
 	 if (reply)
 	 {
 	 	freeReplyObject(reply);
@@ -209,6 +220,8 @@ static void *lua_thread (void *ptr)
     luaL_openlibs(L);  
   
     syslog (LOG_INFO, "Loading %s", lua_script);
+    lua_pushstring(L, script_dir);
+    lua_setglobal(L, "script_dir");
     if (luaL_loadfile(L, lua_script)||lua_pcall(L, 0, 0, 0))
     {
         syslog (LOG_ERR, "luaL_loadfile %s failed - %s",lua_script, lua_tostring(L, -1));
@@ -222,6 +235,7 @@ static void *lua_thread (void *ptr)
     lua_setglobal(L, "redis_host");
     lua_pushcfunction(L, mobster_notify);
     lua_setglobal(L, "mobster_notify");
+
 
     syslog (LOG_NOTICE,"Running %s as %s\n", lua_script, name);
     lua_getglobal(L, "run");             
@@ -241,15 +255,14 @@ static void *lua_thread (void *ptr)
  * ---------------------------------------------------------------------------------------
  */
 
-static void run_mobster (const char* mobster_root)
+static void run_mobster (const char* mobster_config)
 {
+    struct stat sb;
 
     lua_State *L = luaL_newstate();                       
     luaL_openlibs(L);                           
-    char config_file [PATH_MAX];
 
-    snprintf (config_file, PATH_MAX, "%s/scripts/%s", mobster_root, CONFIG_FILE_NAME);
-    if (luaL_loadfile(L, config_file)) 
+    if (luaL_loadfile(L, mobster_config)) 
     {
         syslog (LOG_ERR,"luaL_loadfile failed; %s",lua_tostring(L, -1));
 	abort ();
@@ -272,6 +285,52 @@ static void run_mobster (const char* mobster_root)
     {
 	g_redis_port = (int) lua_tonumber(L, -1);
     }
+
+    /* Added the following options below to allow customization of running instances */
+    lua_getglobal(L, "notice_key");             
+    if (lua_isstring(L, -1))
+    {
+        notice_key = strdup(lua_tostring(L, -1));
+    }
+
+    lua_getglobal(L, "script_dir");             
+
+    if (lua_isstring(L, -1))
+    {
+        script_dir = strdup(lua_tostring(L, -1));
+    }
+
+    if ((lstat (script_dir,&sb)<0) || !S_ISDIR(sb.st_mode))
+    {
+       char* mobster_root=getenv(MOBSTER_ROOT);
+       char temp_script_dir [PATH_MAX];
+
+       snprintf (temp_script_dir, PATH_MAX, "%s/%s", mobster_root, "/scripts");
+
+       if (!temp_script_dir)
+       {
+          fprintf (stderr,"Script Directory %s does not exist and cannot location under mobster_root\n", script_dir);
+          exit (EXIT_FAILURE);
+       }
+       else
+       {  
+          fprintf(stderr,"Script Directory %s does not exist.  Using Script directory under mobster_root\n", script_dir);
+          script_dir=temp_script_dir;
+       }
+    }
+
+    lua_getglobal(L, "log_dir");
+    if (lua_isstring(L, -1))
+    {
+        log_dir = strdup(lua_tostring(L, -1));
+    }
+
+    lua_getglobal(L, "log_file");
+    if (lua_isstring(L, -1))
+    {
+        log_file = strdup(lua_tostring(L, -1));
+    }
+    /* End of new keys added */
 
     lua_getglobal(L, "mobster_scripts");             
 
@@ -302,7 +361,7 @@ static void run_mobster (const char* mobster_root)
 	struct stat sb;
         const char *lua_script = lua_tostring(L, -1);                 
 	char tmp [PATH_MAX];
-	snprintf (tmp, PATH_MAX, "%s/scripts/%s", mobster_root, lua_script);
+	snprintf (tmp, PATH_MAX, "%s/%s", script_dir, lua_script);
 
 	/*
          * check that file exists with execute permissions 
@@ -331,10 +390,10 @@ static void run_mobster (const char* mobster_root)
  * ---------------------------------------------------------------------------------------
  */
 
-void mobster_start(const char* mobster_root)
+void mobster_start(const char* mobster_config)
 {
     g_verbose=isatty(1);
-    run_mobster (mobster_root);
+    run_mobster (mobster_config);
 }
 
 /*
