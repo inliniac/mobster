@@ -2,30 +2,30 @@
 --
 -- ----------------------------------------------
 
-local mobster_root = os.getenv("MOBSTER_ROOT")
-package.path = mobster_root.."/scripts/?.lua;" .. package.path
-package.cpath = mobster_root.."/lib/?.so;" .. package.cpath
+package.path = script_dir.."/?.lua;" .. package.path
+package.cpath = script_dir.."/lib/?.so;" .. package.cpath
 
 local redis = require('redis')
 local json = require('cjson')
-local notice_log_path = "/var/log/notice.log"
+local notice_log_path = log_dir.."/notice.log"
 
 -- ----------------------------------------------
 --
 -- ----------------------------------------------
 function process()
-	local channels = { 'EVE:notice' }
+	local channels = { notice_key }
 	local params = { host = redis_host, port = redis_port }
 
 	local listen = redis.connect(params)
 	local client = redis.connect(params)
-	local notice_log = io.open(notice_log_path, "a")
+	local notice_log = io.open(notice_log_path, "a+")
 
 	for msg, abort in listen:pubsub({ subscribe = channels }) do
 	    if msg.kind == 'subscribe' then
                 print('subscribed to channel '..msg.channel)
             elseif msg.kind == 'message' then
 		notice_log:write(msg.payload,"\n")
+                notice_log:flush()
 	    end
 	end
 
