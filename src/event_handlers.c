@@ -82,7 +82,7 @@ void file_rotate(int signo)
 		setvbuf(g_fp, NULL, _IOLBF, 0);
 
 		pthread_mutex_unlock(&g_redis_mutex);
-		syslog (LOG_ERR,"%s: received HUP to truncate %s", LOG_FILE);
+		syslog (LOG_ERR,"%s: received HUP to truncate", LOG_FILE);
 	}
 }
 
@@ -148,6 +148,7 @@ static void *notice_thread (void *v)
 	}
 	fclose (g_fp);
 	redisFree (redis_ctx);
+    pthread_exit(NULL);
 }
 
 /*
