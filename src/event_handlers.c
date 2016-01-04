@@ -157,6 +157,7 @@ static void *notice_thread (void *v)
 	}
 	fclose (g_fp);
 	redisFree (redis_ctx);
+    pthread_exit(NULL);
 }
 
 /*

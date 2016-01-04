@@ -699,7 +699,6 @@ AC_SUBST(CONFIGURE_LOCALSTATEDIR)
 AC_OUTPUT(Makefile src/Makefile)
 
 MOBSTER_BUILD_CONF="Mobster Configuration:
-  libjansson support:                      ${enable_jansson}
   hiredis support:                         ${enable_hiredis}
   LUA support:                             ${enable_lua}
   libluajit:                               ${enable_luajit}
@@ -721,7 +720,6 @@ Generic build parameters:
   GCC Profile enabled:                     ${enable_gccprofile}
   Position Independent Executable enabled: ${enable_pie}
   CFLAGS                                   ${CFLAGS}
-  PCAP_CFLAGS                              ${PCAP_CFLAGS}
   SECCFLAGS                                ${SECCFLAGS}"
 
 echo
