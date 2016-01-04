@@ -1,0 +1,20 @@
+language: c
+compiler:
+  - gcc
+  - clang
+# Change this to your needs
+script: sh autogen.sh && ./configure --enable-lua && make && make check
+addons:
+  apt:
+    packages:
+    - build-essential
+    - autoconf
+    - automake
+    - libtool
+    - liblua5.1-dev
+    - libhiredis-dev
+    - libevent2-dev
+    - make
+before_install:
+sudo: true
+
